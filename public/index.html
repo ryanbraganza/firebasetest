@@ -1,14 +1,69 @@
 <!doctype html>
 <head>
+  <meta charset="UTF-8">
   <title>hi</title>
   <script src="https://fb.me/react-with-addons-0.13.3.min.js"></script>
+  <script src="https://raw.githubusercontent.com/lodash/lodash/3.9.3/lodash.js"></script>
   <script src="https://fb.me/JSXTransformer-0.13.3.js"></script>
+  <script src="https://cdn.firebase.com/js/client/2.2.7/firebase.js"></script>
   <script type="text/jsx">
   var App = React.createClass({
+    propTypes: function() {
+      firebase: React.PropTypes.object.isRequired
+    },
+    getInitialState: function() {
+      return {
+        games: ['a', 'b']
+      };
+    },
+    componentWillMount: function() {
+      var self = this;
+      self.props.firebase.child('games').on('value', function(snapshot) {
+        var firebaseGames = snapshot.val();
+        var keys = Object.keys(firebaseGames);
+        keys.sort();
+        console.log(keys);
+        var games = keys.map(function(key) {
+          return {
+            key: key,
+            game: firebaseGames[key]
+          };
+        });
+        self.setState({
+          games: games
+        });
+      });
+    },
+    componentWillUnmount: function() {
+      // TODO
+    },
+    makeNewGame: function() {
+      var self = this;
+      var name = React.findDOMNode(this.refs.newgamename).value;
+      console.log('make new game' + name);
+      var newGame = self.props.firebase.child('games').push({
+        name: name
+      });
+      console.log('created %o', newGame);
+    },
     render: function() {
+      var games = this.state.games.map(function(game, i){
+        return (
+          <li
+            key={game.key}
+          >
+           {i} {JSON.stringify(game)}
+          </li>
+        );
+      });
       return (
         <div>
-          hi
+          <h1>games</h1>
+          <ul>
+          {games}
+          </ul>
+          <input ref="newgamename" />
+          <button onClick={this.makeNewGame}>Make new game</button>
         </div>
       );
     }
@@ -18,6 +73,9 @@
 </head>
 <body>
   <script type="text/jsx">
-    React.render(<App />, document.body);
+    var firebase = new Firebase('https://vivid-heat-7371.firebaseio.com/');
+    React.render(<App
+      firebase={firebase}
+      />, document.body);
   </script>
 </body>
